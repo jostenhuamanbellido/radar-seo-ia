@@ -1,0 +1,7 @@
+.env
+.venv
+data
+reportes
+*.bat
+webs.txt
+docs

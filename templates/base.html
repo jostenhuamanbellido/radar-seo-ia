@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Radar SEO IA{% endblock %}</title>
+{% include "_style.html" %}
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="{{ '#' if standalone else '/' }}"><i></i>Radar SEO·IA</a>
+    {% if not standalone %}
+    <nav><a href="/">Nueva auditoría</a>{% if not cloud %}<a href="/#recientes">Historial</a>{% endif %}{% if github_url %}<a href="{{ github_url }}" target="_blank" rel="noopener">GitHub</a>{% endif %}</nav>
+    {% endif %}
+  </div>
+</header>
+<main class="wrap" style="padding-top:26px">
+{% block content %}{% endblock %}
+</main>
+<div class="wrap foot">Radar SEO·IA · Auditoría de SEO local, GEO y AEO · Josten Huamán</div>
+</body>
+</html>

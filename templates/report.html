@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}{{ r.domain }} · Radar SEO IA{% endblock %}
+{% block content %}
+{% macro ring(v, big=False) -%}
+  {%- if v is none -%}<div class="ring na{{ ' big' if big }}"><b>—</b></div>
+  {%- else -%}
+  {%- set c = 'var(--ok)' if v >= 70 else ('var(--warn)' if v >= 50 else 'var(--fail)') -%}
+  <div class="ring{{ ' big' if big }}" style="--v:{{ v }};--c:{{ c }}"><b>{{ v }}</b></div>
+  {%- endif -%}
+{%- endmacro %}
+{% macro delta(key) -%}
+  {%- if prev and prev[key] is not none and r.scores[key] is not none -%}
+    {%- set d = r.scores[key] - prev[key] -%}
+    {%- if d > 0 %}<span class="delta up">▲ {{ d }}</span>{% elif d < 0 %}<span class="delta down">▼ {{ -d }}</span>{% else %}<span class="delta muted">= 0</span>{% endif -%}
+  {%- endif -%}
+{%- endmacro %}
+{% set icon = {'ok':'✓','warn':'!','fail':'✕','info':'i'} %}
+
+
+<div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-bottom:18px">
+  <div>
+    <h1>{{ r.meta.brand or r.domain }}</h1>
+    <div class="muted"><a href="{{ r.final_url }}" target="_blank" rel="noopener">{{ r.final_url }}</a> · {{ r.created_at }}</div>
+    <div class="meta-row">
+      <span>Servicio: <b>{{ r.meta.service or '—' }}</b></span>
+      <span>Ubicación: <b>{{ r.meta.city or '—' }}</b></span>
+      <span>Páginas analizadas: <b>{{ r.pages|length }}</b></span>
+      {% if prev %}<span>Comparado con: <b>{{ prev.created_at }}</b></span>{% endif %}
+    </div>
+  </div>
+  {% if not standalone %}
+  <div class="actions">
+    {% if cloud %}
+    <button class="btn ghost" type="button" onclick="(function(){const b=new Blob(['<!doctype html>\n'+document.documentElement.outerHTML],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='radar-{{ r.domain }}-{{ r.created_at[:10] }}.html';a.click();})()">Descargar HTML</button>
+    {% else %}
+    <a class="btn ghost" href="/historial/{{ r.domain }}">Evolución</a>
+    <a class="btn ghost" href="/reporte/{{ r.id }}/descargar">Descargar HTML</a>
+    <a class="btn ghost" href="/reporte/{{ r.id }}/json">JSON</a>
+    {% endif %}
+    <form method="post" action="/auditar" style="margin:0">
+      <input type="hidden" name="url" value="{{ r.final_url }}">
+      <input type="hidden" name="brand" value="{{ r.meta.brand }}">
+      <input type="hidden" name="service" value="{{ r.meta.service }}">
+      <input type="hidden" name="city" value="{{ r.meta.city_query }}">
+      <input type="hidden" name="ai" value="1"><input type="hidden" name="psi" value="1">
+      <input type="hidden" name="queries" value="{{ r.queries[4:]|join('\n') }}">
+      <button class="btn">Volver a medir</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Puntajes -->
+<section class="card">
+  <div class="hero">
+    <div class="score">
+      {{ ring(r.scores.total, True) }}
+      <div><div class="muted small">Puntaje total</div><div class="t" style="font-size:22px">{{ r.grades.total }}</div>{{ delta('total') }}</div>
+    </div>
+    <div class="pillars grid g2">
+      {% for key in ['local','geo','aeo','ai'] %}
+      <div class="score">
+        {{ ring(r.scores[key]) }}
+        <div>
+          <div class="t">{{ r.pillars[key] }}</div>
+          <div class="muted small">{{ r.grades[key] }} {{ delta(key) }}</div>
+          {% if key == 'ai' and r.scores.ai is none %}<div class="muted small">Sin API keys: revisión manual</div>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Prioridades -->
+{% if r.priorities %}
+<section class="card">
+  <h2>Qué mejorar primero</h2>
+  <ol class="prio">
+    {% for c in r.priorities %}
+    <li><div>
+      <span class="pill {{ c.pillar }}">{{ r.pillars[c.pillar].split(' ·')[0] }}</span>
+      <span style="font-weight:600;margin-left:6px">{{ c.name }}</span>
+      <span class="muted small"> · recuperas hasta {{ (c.max - c.points)|round(1) }} pts</span>
+      <div class="small" style="margin-top:4px">{{ c.fix }}</div>
+    </div></li>
+    {% endfor %}
+  </ol>
+</section>
+{% endif %}
+
+<!-- Visibilidad en IAs -->
+<section class="card">
+  <h2>Visibilidad real en IAs</h2>
+  {% if r.ai.ran %}
+    <div class="table-scroll"><table>
+      <tr><th>IA</th><th>Modelo</th><th class="num">Te menciona</th><th class="num">Te cita como fuente</th><th>Puntaje</th></tr>
+      {% for prov, s in r.ai.summary.items() %}
+      <tr>
+        <td><b>{{ prov }}</b></td>
+        <td class="muted small">{{ (r.ai.results|selectattr('provider','equalto',prov)|first).model }}</td>
+        {% if s.score is none %}
+          <td colspan="3" class="small" style="color:var(--fail)">Error: {{ s.error }}</td>
+        {% else %}
+          <td class="num">{{ s.mentions }} / {{ s.answered }}</td>
+          <td class="num">{{ s.citations }} / {{ s.answered }}</td>
+          <td><div style="display:flex;gap:8px;align-items:center"><div class="bar" style="flex:1"><span style="width:{{ s.score }}%"></span></div><b>{{ s.score }}</b></div></td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </table></div>
+
+    <h3 style="margin-top:22px">Respuestas por pregunta</h3>
+    {% for q in r.queries %}
+      <div style="margin-top:14px"><b>“{{ q }}”</b></div>
+      {% for res in r.ai.results if res.query == q %}
+      <details>
+        <summary>
+          <span>{{ res.provider }}</span>
+          {% if not res.ok %}<span class="tag fail">error</span>
+          {% else %}
+            <span class="tag {{ 'ok' if res.mentioned else 'fail' }}">{{ 'te menciona' if res.mentioned else 'no te menciona' }}</span>
+            <span class="tag {{ 'ok' if res.cited or res.in_sources else 'warn' }}">{{ 'te cita' if res.cited else ('en fuentes' if res.in_sources else 'sin cita') }}</span>
+            {% if res.position is not none %}<span class="muted small">aparece al {{ res.position }}% del texto</span>{% endif %}
+          {% endif %}
+        </summary>
+        {% if res.ok %}
+          <div class="answer">{{ res.text }}</div>
+          {% if res.citations %}<div class="small links"><b>Fuentes citadas:</b>
+            {% for c in res.citations %}<a href="{{ c.url }}" target="_blank" rel="noopener">{{ c.title or c.url|truncate(60) }}</a>{% endfor %}</div>{% endif %}
+        {% else %}<div class="small" style="color:var(--fail)">{{ res.error }}</div>{% endif %}
+      </details>
+      {% endfor %}
+    {% endfor %}
+
+    {% if r.ai.competitors %}
+    <h3 style="margin-top:22px">Quién aparece en lugar de tu web</h3>
+    <p class="muted small">Dominios que las IAs usaron como fuente en estas preguntas (nº de respuestas en que aparecen).</p>
+    <div class="table-scroll"><table>
+      {% for dom, n in r.ai.competitors %}<tr><td>{{ dom }}</td><td class="num">{{ n }}</td></tr>{% endfor %}
+    </table></div>
+    {% endif %}
+  {% else %}
+    <p class="muted">{{ r.ai.message }}</p>
+  {% endif %}
+
+  <h3 style="margin-top:22px">Revisión manual en cada IA</h3>
+  <p class="muted small">Abre cada pregunta directamente en la IA (útil para ver la versión con tu ubicación y sesión).</p>
+  <div class="table-scroll"><table>
+    {% for m in r.manual %}
+    <tr><td style="min-width:260px">{{ m.query }}</td><td class="links">{% for name, url in m.links.items() %}<a href="{{ url }}" target="_blank" rel="noopener">{{ name }}</a>{% endfor %}</td></tr>
+    {% endfor %}
+  </table></div>
+</section>
+
+<!-- Checks por pilar -->
+{% for key in ['local','geo','aeo'] %}
+<section class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px">
+    <h2 style="margin:0">{{ r.pillars[key] }}</h2>
+    <span class="pill {{ key }}">{{ r.scores[key] if r.scores[key] is not none else '—' }}/100</span>
+  </div>
+  {% for c in r.checks if c.pillar == key %}
+  <div class="check">
+    <div class="dot {{ c.status }}">{{ icon[c.status] }}</div>
+    <div>
+      <div class="n">{{ c.name }}</div>
+      {% if c.detail %}<div class="d">{{ c.detail }}</div>{% endif %}
+      {% if c.fix %}<div class="f">💡 {{ c.fix }}</div>{% endif %}
+    </div>
+    <div class="p">{% if c.status != 'info' %}{{ c.points }} / {{ c.max }}{% endif %}</div>
+  </div>
+  {% endfor %}
+</section>
+{% endfor %}
+
+<!-- Rastreadores de IA -->
+<section class="card">
+  <h2>Acceso de los rastreadores de IA</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Bot</th><th>Para qué sirve</th><th>robots.txt</th></tr>
+    {% for bot, ok in r.robots.allowed.items() %}
+    <tr><td><b>{{ bot }}</b></td><td class="muted small">{{ r.robots.labels[bot] }}</td><td class="{{ 'yes' if ok else 'no' }}">{{ 'Permitido' if ok else 'Bloqueado' }}</td></tr>
+    {% endfor %}
+  </table></div>
+  <h3 style="margin-top:18px">Prueba de firewall (user-agent simulado)</h3>
+  <div class="table-scroll"><table>
+    {% for name, t in r.bot_tests.items() %}
+    <tr><td>{{ name }}</td><td class="num">HTTP {{ t.status }}</td><td class="{{ 'no' if t.blocked else 'yes' }}">{{ 'Bloqueado' if t.blocked else 'Responde' }}</td></tr>
+    {% endfor %}
+  </table></div>
+  <p class="small muted">llms.txt: {{ 'sí' if r.llms.found else 'no' }} · Sitemap: {{ r.sitemap.url or 'no encontrado' }}
+  {% if r.psi.ok %} · PageSpeed móvil: {{ r.psi.performance }}/100 (LCP {{ r.psi.lcp }}, CLS {{ r.psi.cls }}){% endif %}</p>
+</section>
+
+<!-- Páginas -->
+<section class="card">
+  <h2>Páginas analizadas</h2>
+  <div class="table-scroll"><table>
+    <tr><th>URL</th><th class="num">Palabras</th><th class="num">Preguntas</th><th>Schema</th></tr>
+    {% for p in r.pages %}
+    <tr><td><a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.url|replace('https://','')|truncate(70) }}</a><div class="muted small">{{ p.title|truncate(80) }}</div></td>
+      <td class="num">{{ p.words }}</td><td class="num">{{ p.questions }}</td><td class="small">{{ p.schema|join(', ') or '—' }}</td></tr>
+    {% endfor %}
+  </table></div>
+</section>
+{% endblock %}
