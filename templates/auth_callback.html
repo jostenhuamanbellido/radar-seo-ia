@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth card" style="text-align:center">
+  <h1 style="font-size:22px" id="msg">Confirmando tu cuenta…</h1>
+  <p class="muted small" id="sub"></p>
+</div>
+<script>
+(async function(){
+  const h = new URLSearchParams(location.hash.slice(1));
+  const token = h.get('access_token'), type = h.get('type') || '';
+  const msg = document.getElementById('msg'), sub = document.getElementById('sub');
+  if (!token) { msg.textContent = 'El enlace no es válido o expiró.'; sub.innerHTML = '<a href="/entrar/">Volver a entrar</a>'; return; }
+  try {
+    const r = await fetch('/auth/session/', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({access_token: token, type})});
+    const j = await r.json();
+    if (j.ok) { history.replaceState(null, '', location.pathname); location.href = j.next; return; }
+  } catch (e) {}
+  msg.textContent = 'No pudimos confirmar tu sesión.'; sub.innerHTML = '<a href="/entrar/">Entrar</a>';
+})();
+</script>
+{% endblock %}

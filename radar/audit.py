@@ -160,7 +160,8 @@ def _block_private(url: str):
 
 # --- Auditoría principal ------------------------------------------------------
 def run_audit(url: str, brand: str = "", service: str = "", city: str = "", custom_queries=None,
-              run_ai: bool = True, run_psi: bool = True, max_pages: int | None = None, progress=lambda m: None) -> dict:
+              run_ai: bool = True, run_psi: bool = True, max_pages: int | None = None, progress=lambda m: None,
+              country: str = "", force_ai: bool = False, max_queries: int | None = None) -> dict:
     url = normalize_url(url)
     if not url:
         raise ValueError("Escribe una URL.")
@@ -215,6 +216,11 @@ def run_audit(url: str, brand: str = "", service: str = "", city: str = "", cust
     brand = (brand or auto_brand).strip()
     if city:
         city_onpage = city_query = city.strip()
+    elif country and not city_onpage:
+        from .countries import COUNTRIES
+        c = COUNTRIES.get(country.lower())
+        if c:
+            city_query = c["capital"]
     service = (service or _infer_service(home, all_nodes, brand, city_onpage)).strip()
 
     ctx = {
@@ -226,9 +232,12 @@ def run_audit(url: str, brand: str = "", service: str = "", city: str = "", cust
     progress("Evaluando SEO local, GEO y AEO…")
     checks = checks_local.run(ctx) + checks_geo.run(ctx) + checks_aeo.run(ctx)
 
+    iso = (country or config.PAIS).upper()
     queries = ai_visibility.build_queries(brand, service, city_query, custom_queries)
+    if max_queries:
+        queries = queries[:max_queries]
     if run_ai:
-        ai = ai_visibility.run(queries, brand, city_query, domain, progress)
+        ai = ai_visibility.run(queries, brand, city_query, domain, progress, country=iso, force=force_ai)
     else:
         ai = {"ran": False, "providers": [], "results": [], "score": None, "message": "Consulta a IAs desactivada en esta auditoría."}
 
@@ -248,7 +257,7 @@ def run_audit(url: str, brand: str = "", service: str = "", city: str = "", cust
         "domain": domain,
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "meta": {"brand": brand, "service": service, "city": city_onpage, "city_query": city_query,
-                 "auto_brand": auto_brand},
+                 "auto_brand": auto_brand, "country": iso},
         "scores": scores,
         "grades": {k: grade(v) for k, v in scores.items()},
         "pillars": PILLARS,

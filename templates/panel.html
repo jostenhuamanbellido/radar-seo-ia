@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px">
+  <div>
+    <h1>Mi panel</h1>
+    <div class="muted small">{{ user.email }} · Plan <b>{{ plan.name }}</b> · {{ used }} / {{ plan.audits_month }} auditorías este mes
+      {% if plan.weekly %}· seguimiento semanal activo{% endif %}</div>
+  </div>
+  <div class="actions">
+    {% if plan.code != 'agencia' %}<a class="btn ghost" href="/precios/?plan={{ 'negocio' if plan.code == 'free' else 'agencia' }}#solicitar">Mejorar plan</a>{% endif %}
+    <a class="btn ghost" href="/salir/">Salir</a>
+  </div>
+</div>
+{% if error %}<div class="notice err" style="margin-bottom:14px">{{ error }}</div>{% endif %}
+
+{% if sites %}
+<div class="grid g3" style="margin-bottom:18px">
+  {% for s in sites %}
+  <a class="card" href="/panel/sitio/{{ s.id }}/" style="text-decoration:none;color:inherit;margin:0">
+    <div style="display:flex;gap:14px;align-items:center">
+      {% set v = s.last_score %}
+      {% if v is none %}<div class="ring na" style="width:64px;height:64px"><b style="font-size:16px">—</b></div>
+      {% else %}<div class="ring" style="width:64px;height:64px;--v:{{ v }};--c:{{ 'var(--ok)' if v >= 70 else ('var(--warn)' if v >= 50 else 'var(--fail)') }}"><b style="font-size:20px">{{ v }}</b></div>{% endif %}
+      <div style="min-width:0">
+        <b style="word-break:break-all">{{ s.domain }}</b>
+        <div class="muted small">{{ s.city or '' }} {{ countries[s.country].name if s.country in countries else '' }}</div>
+        <div class="muted small">{{ ('Última: ' ~ s.last_audit_at[:10]) if s.last_audit_at else 'Sin auditar' }}</div>
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if sites|length < plan.sites %}
+<section class="card">
+  <h2>{{ 'Agrega tu web' if not sites else 'Agregar otra web' }}</h2>
+  <form method="post" action="/panel/sitios/">
+    <div class="field"><label>URL</label><input type="text" name="url" required placeholder="https://tunegocio.com"></div>
+    <div class="grid g4">
+      <div class="field"><label>Marca</label><input type="text" name="brand" placeholder="Se detecta sola"></div>
+      <div class="field"><label>Servicio principal</label><input type="text" name="service" placeholder="Ej. dermatología"></div>
+      <div class="field"><label>Ciudad / distrito</label><input type="text" name="city" placeholder="Ej. Miraflores, Lima"></div>
+      <div class="field"><label>País</label><select name="country">{% for code, c in countries.items() %}<option value="{{ code }}" {{ 'selected' if code == profile.country }}>{{ c.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Tus preguntas para las IAs (opcional, una por línea, máx. {{ plan.ai_queries }})</label>
+      <textarea name="queries" placeholder="¿Cuál es la mejor clínica dermatológica en Miraflores?"></textarea></div>
+    <button class="btn">Agregar y auditar</button>
+  </form>
+</section>
+{% else %}
+<p class="muted small">Tu plan {{ plan.name }} permite {{ plan.sites }} web(s). <a href="/precios/?plan=agencia#solicitar">¿Necesitas más?</a></p>
+{% endif %}
+
+{% if plan.white_label %}
+<section class="card">
+  <h2>Marca de tu agencia</h2>
+  <p class="muted small">Aparece en lugar de {{ brand }} en los informes que compartes con tus clientes.</p>
+  <form method="post" action="/panel/agencia/" style="display:flex;gap:8px;flex-wrap:wrap">
+    <input type="text" name="agency_name" value="{{ profile.agency_name or '' }}" placeholder="Nombre de tu agencia" style="flex:1;min-width:200px">
+    <button class="btn">Guardar</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

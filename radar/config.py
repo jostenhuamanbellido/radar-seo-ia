@@ -52,3 +52,18 @@ PUERTO = env_int("PUERTO", 5050)
 # (evita que cualquier visitante gaste tus créditos de API)
 PUBLIC_AI = env("PUBLIC_AI") == "1"
 GITHUB_URL = env("GITHUB_URL", "https://github.com/jostenhuamanbellido/radar-seo-ia")
+
+# --- Marca y SaaS -----------------------------------------------------------
+BRAND = env("BRAND", "Cítame")
+SITE_URL = env("SITE_URL", "https://radar-seo-ia.vercel.app").rstrip("/")
+CONTACT_EMAIL = env("CONTACT_EMAIL", "jostinmarc10@gmail.com")
+FLASK_SECRET = env("FLASK_SECRET", "cambia-esta-clave-en-produccion")
+
+# Supabase (cuentas, historial en la nube, rankings). Sin esto funciona en modo local con SQLite.
+SUPABASE_URL = env("SUPABASE_URL").rstrip("/")
+SUPABASE_ANON_KEY = env("SUPABASE_ANON_KEY")
+SUPABASE_SERVICE_KEY = env("SUPABASE_SERVICE_KEY")
+
+# Vercel Cron envía "Authorization: Bearer <CRON_SECRET>"
+CRON_SECRET = env("CRON_SECRET")
+ANON_DAILY_LIMIT = env_int("ANON_DAILY_LIMIT", 5)

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-land">
+  {% if country %}<div class="pill" style="margin-bottom:14px">{{ country.name }}</div>{% endif %}
+  <h1>¿ChatGPT recomienda tu negocio{% if country %} {{ country.in }}{% endif %}? <em>Descúbrelo gratis.</em></h1>
+  <p class="lead">{{ brand }} pregunta a las IAs lo mismo que preguntan tus clientes, como
+    <i>“{{ (country or countries['pe']).example_query }}”</i>, y te dice si apareces, quién aparece en tu lugar y qué corregir.</p>
+  <form class="tool" method="post" action="/auditar">
+    <div class="row">
+      <input type="text" name="url" placeholder="Pega la URL de tu web, ej. tuclinica.com" required aria-label="URL de tu web">
+      <button class="btn" style="font-size:16px;padding:13px 22px;white-space:nowrap">Auditar gratis</button>
+    </div>
+    <input type="hidden" name="country" value="{{ country.code if country else '' }}">
+    <details style="border:0;padding:8px 6px 4px">
+      <summary class="muted small">Opciones: marca, servicio y ciudad (se detectan solas)</summary>
+      <div class="grid g3" style="margin-top:10px">
+        <input type="text" name="brand" placeholder="Marca" aria-label="Marca">
+        <input type="text" name="service" placeholder="Servicio principal" aria-label="Servicio">
+        <input type="text" name="city" placeholder="Ciudad o distrito" aria-label="Ciudad">
+      </div>
+    </details>
+  </form>
+  <div class="ais"><span>ChatGPT</span><span>Gemini</span><span>Claude</span><span>Perplexity</span><span>Google AI Overviews</span></div>
+  <p class="small muted" style="margin-top:12px">Sin registro · Resultado en menos de 1 minuto</p>
+</section>
+
+<section class="block">
+  <h2>Cómo funciona</h2>
+  <p class="sub">Tres pasos, sin instalar nada.</p>
+  <div class="grid g3 steps">
+    <div class="card"><h3>Pega tu URL</h3><p class="muted" style="margin:0">Detectamos tu marca, tu servicio y tu ciudad a partir de tu web y de tus datos estructurados.</p></div>
+    <div class="card"><h3>Auditamos 40+ señales</h3><p class="muted" style="margin:0">SEO local, acceso de los bots de IA, schema, contenido citable, respuestas directas y velocidad móvil.</p></div>
+    <div class="card"><h3>Preguntamos a las IAs</h3><p class="muted" style="margin:0">Con cuenta gratis, consultamos a cada IA con búsqueda web y medimos si te mencionan y si citan tu web.</p></div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>Qué medimos</h2>
+  <p class="sub">Un puntaje de 0 a 100 por pilar y una lista priorizada de lo que más te hace perder visibilidad.</p>
+  <div class="grid g2">
+    <div class="card feature"><span class="pill local">SEO Local</span><h3 style="margin-top:8px">¿Te ubican en tu ciudad?</h3><p>Schema LocalBusiness, dirección y teléfono consistentes, horario, coordenadas, mapa, ficha de Google y reseñas.</p></div>
+    <div class="card feature"><span class="pill geo">GEO</span><h3 style="margin-top:8px">¿Las IAs pueden leerte?</h3><p>robots.txt para 14 bots de IA, bloqueos de Cloudflare, contenido sin JavaScript, autoría, fechas y datos citables.</p></div>
+    <div class="card feature"><span class="pill aeo">AEO</span><h3 style="margin-top:8px">¿Respondes como pregunta la gente?</h3><p>FAQ con schema, encabezados en forma de pregunta, respuestas directas de 40-60 palabras, listas y tablas.</p></div>
+    <div class="card feature"><span class="pill ai">Visibilidad real</span><h3 style="margin-top:8px">¿Te recomiendan de verdad?</h3><p>Preguntas reales a ChatGPT, Gemini, Claude y Perplexity: menciones, citas a tu web y competidores que aparecen en tu lugar.</p></div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>Hecho para negocios locales{% if country %} {{ country.in }}{% endif %}</h2>
+  <p class="sub">Cuando alguien pregunta a una IA “¿dónde me atiendo?”, la IA nombra 3 a 5 negocios. Si no estás ahí, no existes para ese cliente.</p>
+  <div class="chips">
+    {% for c in categories %}<span>{{ c|capitalize }}</span>{% endfor %}
+    <a href="/precios/#agencia"><b>Agencias de marketing →</b></a>
+  </div>
+  {% if country %}
+  <p class="muted" style="margin-top:18px">Ciudades: {{ country.cities|join(', ') }}. Las IAs también usan {{ country.directories }} para decidir a quién recomendar.</p>
+  {% endif %}
+</section>
+
+{% if rankings %}
+<section class="block">
+  <h2>Qué negocios recomienda la IA</h2>
+  <p class="sub">Rankings con respuestas reales de las IAs, actualizados cada mes.</p>
+  <div class="chips">
+    {% for r in rankings %}<a href="/rankings/{{ r.country }}/{{ r.slug }}/">{{ r.category|capitalize }} en {{ r.city }}</a>{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="block" id="precios">
+  <h2>Precios</h2>
+  <p class="sub">Empieza gratis. Paga solo si quieres seguimiento semanal.</p>
+  <div class="grid g3">
+    {% for code, p in plans.items() %}
+    <div class="card price {{ 'hl' if code == 'negocio' }}">
+      <b>{{ p.name }}</b>
+      <div class="amt">{% if p.price %}US${{ p.price }}<small>/mes</small>{% else %}Gratis{% endif %}</div>
+      <ul>{% for f in p.features %}<li>{{ f }}</li>{% endfor %}</ul>
+      {% if code == 'free' %}<a class="btn ghost" href="{{ '/entrar/?modo=registro' if db_enabled else '#' }}">Crear cuenta gratis</a>
+      {% else %}<a class="btn" href="/precios/?plan={{ code }}#solicitar">Quiero el plan {{ p.name }}</a>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="block faq">
+  <h2>Preguntas frecuentes</h2>
+  {% for q, a in faq %}
+  <details {{ 'open' if loop.first }}><summary>{{ q }}</summary><p>{{ a }}</p></details>
+  {% endfor %}
+  <p style="margin-top:20px"><a href="/guia/como-aparecer-en-chatgpt/">Lee la guía completa: cómo aparecer en ChatGPT con tu negocio →</a></p>
+</section>
+
+<section class="block" style="text-align:center">
+  <h2>¿Te están recomendando o recomiendan a tu competencia?</h2>
+  <p class="sub" style="margin:0 auto 20px">Averígualo en un minuto.</p>
+  <a class="btn" href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});document.querySelector('.tool input').focus();return false;" style="font-size:16px;padding:13px 22px">Auditar mi web gratis</a>
+</section>
+{% endblock %}

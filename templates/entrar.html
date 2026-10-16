@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth card">
+  <div class="tabs">
+    <a href="?modo=entrar&next={{ next|urlencode }}" class="{{ 'on' if mode != 'registro' }}">Entrar</a>
+    <a href="?modo=registro&next={{ next|urlencode }}" class="{{ 'on' if mode == 'registro' }}">Crear cuenta</a>
+  </div>
+  {% if mode == 'registro' %}
+  <h1 style="font-size:22px">Crea tu cuenta gratis</h1>
+  <p class="muted small">Con cuenta medimos tu visibilidad real en ChatGPT, Gemini, Claude y Perplexity y guardamos tu historial.</p>
+  {% else %}
+  <h1 style="font-size:22px">Entra a tu panel</h1>
+  {% endif %}
+  {% if error %}<div class="notice err" style="margin-bottom:12px">{{ error }}</div>{% endif %}
+  {% if info %}<div class="notice ok" style="margin-bottom:12px">{{ info }}</div>{% endif %}
+  <form method="post">
+    <input type="hidden" name="modo" value="{{ mode }}"><input type="hidden" name="next" value="{{ next }}">
+    <div class="field"><label>Correo</label><input type="email" name="email" required autocomplete="email"></div>
+    <div class="field"><label>Clave</label><input type="password" name="password" required minlength="{{ 8 if mode == 'registro' else 1 }}"
+      autocomplete="{{ 'new-password' if mode == 'registro' else 'current-password' }}"></div>
+    <button class="btn" style="width:100%;justify-content:center">{{ 'Crear cuenta' if mode == 'registro' else 'Entrar' }}</button>
+  </form>
+  {% if mode != 'registro' %}<p class="small" style="margin-top:14px"><a href="/recuperar/">¿Olvidaste tu clave?</a></p>{% endif %}
+  {% if mode == 'registro' %}<p class="small muted" style="margin-top:14px">Al crear tu cuenta aceptas nuestra <a href="/privacidad/">política de privacidad</a>.</p>{% endif %}
+</div>
+{% endblock %}

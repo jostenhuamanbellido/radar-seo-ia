@@ -30,22 +30,26 @@
   </div>
   {% if not standalone %}
   <div class="actions">
-    {% if cloud %}
-    <button class="btn ghost" type="button" onclick="(function(){const b=new Blob(['<!doctype html>\n'+document.documentElement.outerHTML],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='radar-{{ r.domain }}-{{ r.created_at[:10] }}.html';a.click();})()">Descargar HTML</button>
-    {% else %}
+    <button class="btn ghost" type="button" onclick="(function(){const c=document.documentElement.cloneNode(true);c.querySelectorAll('.actions,.top nav,.menu-btn').forEach(e=>e.remove());const b=new Blob(['<!doctype html>\n'+c.outerHTML],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='informe-{{ r.domain }}-{{ r.created_at[:10] }}.html';a.click();})()">Descargar</button>
+    {% if r.public_id %}
+    <button class="btn ghost" type="button" onclick="navigator.clipboard.writeText(location.href);this.textContent='¡Enlace copiado!'">Copiar enlace</button>
+    {% endif %}
+    {% if owner and site_id %}
+    <a class="btn" href="/panel/sitio/{{ site_id }}/">Ver evolución</a>
+    {% elif r.id and not cloud %}
     <a class="btn ghost" href="/historial/{{ r.domain }}">Evolución</a>
-    <a class="btn ghost" href="/reporte/{{ r.id }}/descargar">Descargar HTML</a>
     <a class="btn ghost" href="/reporte/{{ r.id }}/json">JSON</a>
     {% endif %}
+    {% if not owner %}
     <form method="post" action="/auditar" style="margin:0">
       <input type="hidden" name="url" value="{{ r.final_url }}">
       <input type="hidden" name="brand" value="{{ r.meta.brand }}">
       <input type="hidden" name="service" value="{{ r.meta.service }}">
       <input type="hidden" name="city" value="{{ r.meta.city_query }}">
-      <input type="hidden" name="ai" value="1"><input type="hidden" name="psi" value="1">
-      <input type="hidden" name="queries" value="{{ r.queries[4:]|join('\n') }}">
+      <input type="hidden" name="country" value="{{ (r.meta.country or '')|lower }}">
       <button class="btn">Volver a medir</button>
     </form>
+    {% endif %}
   </div>
   {% endif %}
 </div>
@@ -141,7 +145,14 @@
     </table></div>
     {% endif %}
   {% else %}
+    {% if r.public_id and not user %}
+    <div class="notice" style="display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+      <span><b>¿ChatGPT te recomienda?</b> Crea tu cuenta gratis y preguntamos a ChatGPT, Gemini, Claude y Perplexity por tu negocio.</span>
+      <a class="btn" href="/entrar/?modo=registro">Medir en las IAs gratis</a>
+    </div>
+    {% else %}
     <p class="muted">{{ r.ai.message }}</p>
+    {% endif %}
   {% endif %}
 
   <h3 style="margin-top:22px">Revisión manual en cada IA</h3>

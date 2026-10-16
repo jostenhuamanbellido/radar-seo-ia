@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<article class="prose">
+  <h1>Política de privacidad</h1>
+  <p>{{ brand }} guarda solo lo necesario para funcionar:</p>
+  <ul>
+    <li><b>Cuenta:</b> tu correo y una clave cifrada (gestionada por Supabase Auth).</li>
+    <li><b>Webs y auditorías:</b> las URLs que agregas y los resultados de cada auditoría, para mostrarte tu historial.</li>
+    <li><b>Solicitudes de plan:</b> el correo y comentario que nos envías desde Precios.</li>
+    <li><b>Límite de uso anónimo:</b> un identificador cifrado de tu IP durante el día, para evitar abusos. No guardamos la IP en claro.</li>
+  </ul>
+  <p>Para auditar una web consultamos sus páginas públicas y, si tienes cuenta, enviamos preguntas sobre tu negocio a
+    proveedores de IA (OpenAI, Anthropic, Google, Perplexity). No vendemos tus datos.</p>
+  <p>Los informes tienen un enlace privado difícil de adivinar; cualquiera que tenga el enlace puede verlo.</p>
+  <p>Para borrar tu cuenta o tus datos escríbenos a <a href="mailto:{{ contact|default('jostinmarc10@gmail.com') }}">{{ contact|default('jostinmarc10@gmail.com') }}</a>.</p>
+</article>
+{% endblock %}

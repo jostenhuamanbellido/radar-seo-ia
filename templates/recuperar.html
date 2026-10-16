@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth card">
+  <h1 style="font-size:22px">Recuperar clave</h1>
+  {% if sent %}<div class="notice ok">Si el correo existe, te enviamos un enlace para crear una nueva clave.</div>
+  {% else %}
+  <form method="post">
+    <div class="field"><label>Correo</label><input type="email" name="email" required></div>
+    <button class="btn" style="width:100%;justify-content:center">Enviar enlace</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

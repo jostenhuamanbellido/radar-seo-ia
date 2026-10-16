@@ -1,23 +1,78 @@
 <!doctype html>
-<html lang="es">
+<html lang="{{ lang|default('es') }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}Radar SEO IA{% endblock %}</title>
+{% set m = meta|default({}) %}
+<title>{{ m.title|default(brand|default('Cítame')) }}</title>
+{% if m.description %}<meta name="description" content="{{ m.description }}">{% endif %}
+{% if m.noindex %}<meta name="robots" content="noindex, nofollow">{% else %}<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">{% endif %}
+{% if m.canonical %}<link rel="canonical" href="{{ m.canonical }}">{% endif %}
+{% for hl, href in (m.alternates|default({})).items() %}<link rel="alternate" hreflang="{{ hl }}" href="{{ href }}">
+{% endfor %}
+{% if m.title %}
+<meta property="og:type" content="{{ m.og_type|default('website') }}">
+<meta property="og:title" content="{{ m.title }}">
+<meta property="og:description" content="{{ m.description }}">
+{% if m.canonical %}<meta property="og:url" content="{{ m.canonical }}">{% endif %}
+<meta property="og:site_name" content="{{ brand|default('Cítame') }}">
+<meta property="og:image" content="{{ site_url|default('') }}/static/og.png">
+<meta name="twitter:card" content="summary_large_image">
+{% endif %}
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+{% for j in m.jsonld|default([]) %}<script type="application/ld+json">{{ j|safe }}</script>
+{% endfor %}
 {% include "_style.html" %}
 </head>
 <body>
 <header class="top">
   <div class="wrap">
-    <a class="logo" href="{{ '#' if standalone else '/' }}"><i></i>Radar SEO·IA</a>
-    {% if not standalone %}
-    <nav><a href="/">Nueva auditoría</a>{% if not cloud %}<a href="/#recientes">Historial</a>{% endif %}{% if github_url %}<a href="{{ github_url }}" target="_blank" rel="noopener">GitHub</a>{% endif %}</nav>
+    {% if white_label|default(false) %}
+    <span class="logo">{{ brand }}</span>
+    {% else %}
+    <a class="logo" href="{{ '#' if standalone|default(false) else '/' }}" aria-label="{{ brand|default('Cítame') }} inicio">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 4h22a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H14l-7 6v-6H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z" fill="var(--accent)"/><path d="M11 17.5c0-3 1.4-5.2 3.6-6.5l.9 1.3c-1.3.9-2 2-2.1 3.2H15v4h-4zm7 0c0-3 1.4-5.2 3.6-6.5l.9 1.3c-1.3.9-2 2-2.1 3.2H22v4h-4z" fill="var(--accent-ink)"/></svg>
+      {{ brand|default('Cítame') }}
+    </a>
+    {% endif %}
+    {% if not standalone|default(false) %}
+    <button class="menu-btn" type="button" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Menú">Menú</button>
+    <nav>
+      <a href="/">Auditoría gratis</a>
+      <a href="/rankings/">Rankings</a>
+      <a href="/guia/como-aparecer-en-chatgpt/">Guía</a>
+      <a href="/precios/">Precios</a>
+      {% if local_mode|default(false) %}<a href="/local/">Historial</a>{% endif %}
+      {% if user %}<a href="/panel/" class="cta">Mi panel</a>{% elif db_enabled|default(false) %}<a href="/entrar/" class="cta">Entrar</a>{% endif %}
+    </nav>
     {% endif %}
   </div>
 </header>
 <main class="wrap" style="padding-top:26px">
 {% block content %}{% endblock %}
 </main>
-<div class="wrap foot">Radar SEO·IA · Auditoría de SEO local, GEO y AEO · Josten Huamán</div>
+{% if not standalone|default(false) and not white_label|default(false) %}
+<footer class="site-foot">
+  <div class="wrap cols">
+    <div style="max-width:300px">
+      <h4>{{ brand|default('Cítame') }}</h4>
+      <p style="margin:0">Mide si ChatGPT, Gemini, Claude y Perplexity recomiendan tu negocio y qué corregir para aparecer.</p>
+    </div>
+    <div><h4>Países</h4><ul>
+      {% for code, c in (countries|default({})).items() %}<li><a href="/{{ code }}/">Aparecer en ChatGPT en {{ c.name }}</a></li>{% endfor %}
+    </ul></div>
+    <div><h4>Recursos</h4><ul>
+      <li><a href="/guia/como-aparecer-en-chatgpt/">Cómo aparecer en ChatGPT</a></li>
+      <li><a href="/rankings/">Rankings por ciudad</a></li>
+      <li><a href="/precios/">Precios</a></li>
+      <li><a href="/privacidad/">Privacidad</a></li>
+      {% if github_url %}<li><a href="{{ github_url }}" rel="noopener" target="_blank">Código en GitHub</a></li>{% endif %}
+    </ul></div>
+  </div>
+  <div class="wrap" style="margin-top:20px">© 2026 {{ brand|default('Cítame') }} · Hecho en Perú por Josten Huamán</div>
+</footer>
+{% elif white_label|default(false) %}
+<div class="wrap foot">Informe preparado por {{ brand }}</div>
+{% endif %}
 </body>
 </html>

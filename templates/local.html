@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Historial local</h1>
+<section class="card">
+  {% if recent %}
+  <div class="table-scroll"><table>
+    <tr><th>Web</th><th>Fecha</th><th class="num">Total</th><th class="num">Local</th><th class="num">GEO</th><th class="num">AEO</th><th class="num">IAs</th><th></th></tr>
+    {% for a in recent %}
+    <tr><td><a href="/reporte/{{ a.id }}"><b>{{ a.domain }}</b></a></td><td class="muted small">{{ a.created_at }}</td>
+      <td class="num"><b>{{ a.total }}</b></td><td class="num">{{ a.local if a.local is not none else '—' }}</td>
+      <td class="num">{{ a.geo if a.geo is not none else '—' }}</td><td class="num">{{ a.aeo if a.aeo is not none else '—' }}</td>
+      <td class="num">{{ a.ai if a.ai is not none else '—' }}</td><td><a class="small" href="/historial/{{ a.domain }}">evolución</a></td></tr>
+    {% endfor %}
+  </table></div>
+  {% else %}<p class="muted">Todavía no hay auditorías.</p>{% endif %}
+</section>
+{% endblock %}

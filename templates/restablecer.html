@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth card">
+  <h1 style="font-size:22px">Nueva clave</h1>
+  {% if error %}<div class="notice err" style="margin-bottom:12px">{{ error }}</div>{% endif %}
+  <form method="post">
+    <div class="field"><label>Nueva clave (mín. 8 caracteres)</label><input type="password" name="password" minlength="8" required autocomplete="new-password"></div>
+    <button class="btn" style="width:100%;justify-content:center">Guardar</button>
+  </form>
+</div>
+{% endblock %}

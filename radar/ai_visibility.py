@@ -50,14 +50,14 @@ def manual_links(queries: list) -> list:
 
 
 # --- Proveedores -------------------------------------------------------------
-def _ask_openai(q: str, city: str) -> dict:
+def _ask_openai(q: str, city: str, country: str) -> dict:
     r = requests.post(
         "https://api.openai.com/v1/responses",
         headers={"Authorization": f"Bearer {config.OPENAI_API_KEY}"},
         json={
             "model": config.OPENAI_MODEL,
             "input": q,
-            "tools": [{"type": "web_search", "user_location": {"type": "approximate", "country": config.PAIS, "city": city}}],
+            "tools": [{"type": "web_search", "user_location": {"type": "approximate", "country": country, "city": city}}],
         },
         timeout=TIMEOUT,
     )
@@ -75,7 +75,7 @@ def _ask_openai(q: str, city: str) -> dict:
     return {"text": text, "citations": cites}
 
 
-def _ask_anthropic(q: str, city: str) -> dict:
+def _ask_anthropic(q: str, city: str, country: str) -> dict:
     r = requests.post(
         "https://api.anthropic.com/v1/messages",
         headers={"x-api-key": config.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"},
@@ -85,7 +85,7 @@ def _ask_anthropic(q: str, city: str) -> dict:
             "messages": [{"role": "user", "content": q}],
             "tools": [{
                 "type": "web_search_20250305", "name": "web_search", "max_uses": 3,
-                "user_location": {"type": "approximate", "country": config.PAIS, "city": city},
+                "user_location": {"type": "approximate", "country": country, "city": city},
             }],
         },
         timeout=TIMEOUT,
@@ -106,7 +106,7 @@ def _ask_anthropic(q: str, city: str) -> dict:
     return {"text": text, "citations": cites, "sources": sources}
 
 
-def _ask_gemini(q: str, city: str) -> dict:
+def _ask_gemini(q: str, city: str, country: str) -> dict:
     r = requests.post(
         f"https://generativelanguage.googleapis.com/v1beta/models/{config.GEMINI_MODEL}:generateContent",
         headers={"x-goog-api-key": config.GEMINI_API_KEY, "content-type": "application/json"},
@@ -125,14 +125,14 @@ def _ask_gemini(q: str, city: str) -> dict:
     return {"text": text, "citations": cites}
 
 
-def _ask_perplexity(q: str, city: str) -> dict:
+def _ask_perplexity(q: str, city: str, country: str) -> dict:
     r = requests.post(
         "https://api.perplexity.ai/chat/completions",
         headers={"Authorization": f"Bearer {config.PERPLEXITY_API_KEY}"},
         json={
             "model": config.PERPLEXITY_MODEL,
             "messages": [{"role": "user", "content": q}],
-            "web_search_options": {"user_location": {"country": config.PAIS}},
+            "web_search_options": {"user_location": {"country": country}},
         },
         timeout=TIMEOUT,
     )
@@ -153,8 +153,9 @@ PROVIDERS = {
 }
 
 
-def active_providers() -> list:
-    if config.CLOUD and not config.PUBLIC_AI:
+def active_providers(force: bool = False) -> list:
+    """force=True: usuario con cuenta (en la nube las IAs solo se usan para usuarios registrados)."""
+    if config.CLOUD and not config.PUBLIC_AI and not force:
         return []
     return [name for name, (key, _, _) in PROVIDERS.items() if key()]
 
@@ -194,8 +195,15 @@ def _analyze(resp: dict, brand: str, domain: str) -> dict:
     return {"mentioned": mentioned, "cited": cited, "in_sources": in_sources, "position": position, "competitors": others}
 
 
-def run(queries: list, brand: str, city: str, domain: str, progress=lambda m: None) -> dict:
-    providers = active_providers()
+def ask(provider: str, prompt: str, city: str, country: str = "PE") -> dict:
+    """Pregunta libre a un proveedor (la usan los rankings)."""
+    _, fn, _ = PROVIDERS[provider]
+    return fn(prompt, city, country)
+
+
+def run(queries: list, brand: str, city: str, domain: str, progress=lambda m: None,
+        country: str = "PE", force: bool = False) -> dict:
+    providers = active_providers(force)
     if not providers:
         return {"ran": False, "providers": [], "results": [], "score": None,
                 "message": ("Demo pública: la consulta automática a IAs está desactivada. Instala la versión local con tus claves "
@@ -209,7 +217,7 @@ def run(queries: list, brand: str, city: str, domain: str, progress=lambda m: No
         prov, q = job
         _, fn, model = PROVIDERS[prov]
         try:
-            resp = fn(q, city or config.CIUDAD_DEFECTO)
+            resp = fn(q, city or config.CIUDAD_DEFECTO, country)
             res = _analyze(resp, brand, domain)
             return {"provider": prov, "model": model(), "query": q, "ok": True, "text": resp["text"][:4000],
                     "citations": resp.get("citations", [])[:15], **res}

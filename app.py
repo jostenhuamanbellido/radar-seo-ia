@@ -1,123 +1,87 @@
-"""Radar SEO IA · interfaz web local.
+"""Cítame · aplicación web (Flask).
 
-Ejecuta:  python app.py   y abre http://localhost:5050
+Local:   python app.py   →  http://localhost:5050
+Vercel:  api/index.py importa `app`.
+
+Modos:
+- Con Supabase (SUPABASE_URL + claves): cuentas, panel, informes compartibles, rankings, seguimiento semanal.
+- Sin Supabase (uso local): auditorías con historial en SQLite (data/radar.db).
 """
 import threading
-import uuid
 import webbrowser
+from datetime import timedelta
 
-from flask import Flask, Response, abort, jsonify, redirect, render_template, request
+from flask import Flask, Response, abort, jsonify, render_template
 
-from radar import ai_visibility, config, report, storage
-from radar.audit import run_audit
+from radar import config, db, report, storage
+from radar.countries import COUNTRIES
+from web import account, api, public
+from web.common import current_user, seo
 
-app = Flask(__name__, template_folder=str(config.TEMPLATES_DIR))
-JOBS: dict = {}
+app = Flask(__name__, template_folder=str(config.TEMPLATES_DIR), static_folder=str(config.BASE_DIR / "static"))
+app.secret_key = config.FLASK_SECRET
+app.permanent_session_lifetime = timedelta(days=30)
+app.config.update(SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=config.CLOUD, SESSION_COOKIE_HTTPONLY=True)
+
+app.register_blueprint(public.bp)
+app.register_blueprint(account.bp)
+app.register_blueprint(api.bp)
 
 
 @app.context_processor
 def _globals():
-    return {"cloud": config.CLOUD, "github_url": config.GITHUB_URL}
+    return {"cloud": config.CLOUD, "github_url": config.GITHUB_URL, "brand": config.BRAND,
+            "site_url": config.SITE_URL, "db_enabled": db.enabled(), "local_mode": not db.enabled() and not config.CLOUD}
 
 
-def _params(form) -> dict:
-    return {
-        "url": (form.get("url") or "").strip(),
-        "brand": form.get("brand", ""),
-        "service": form.get("service", ""),
-        "city": form.get("city", ""),
-        "custom_queries": [q for q in (form.get("queries") or "").splitlines() if q.strip()],
-        "run_ai": form.get("ai") == "1",
-        "run_psi": form.get("psi") == "1",
-    }
+@app.errorhandler(404)
+def not_found(_):
+    meta = seo(f"No encontrado | {config.BRAND}", "", "/404", noindex=True)
+    return render_template("404.html", meta=meta, user=current_user(), countries=COUNTRIES), 404
 
 
-def _worker(job_id: str, params: dict):
-    job = JOBS[job_id]
-    try:
-        result = run_audit(progress=lambda m: job["log"].append(m), **params)
-        audit_id = storage.save(result)
-        result["id"] = audit_id
-        prev = storage.previous(result["domain"], audit_id)
-        path = report.save(result, prev)
-        job["log"].append(f"Informe guardado en {path.name}")
-        job.update(status="done", audit_id=audit_id)
-    except Exception as exc:  # noqa: BLE001 - se muestra al usuario
-        job.update(status="error", error=str(exc))
-
-
-@app.get("/")
-def index():
-    recent = [] if config.CLOUD else storage.recent()
-    return render_template("index.html", recent=recent, providers=ai_visibility.active_providers(), standalone=False)
-
-
-@app.post("/auditar")
-def auditar():
-    params = _params(request.form)
-    url = params["url"]
-    if not url:
-        return redirect("/")
-    if config.CLOUD:
-        # Serverless: no hay hilos persistentes; la página de progreso llama a /api/run y espera el informe
-        return render_template("progress.html", job=None, url=url, form=dict(request.form), standalone=False)
-    job_id = uuid.uuid4().hex[:10]
-    JOBS[job_id] = {"status": "running", "log": [], "audit_id": None, "error": ""}
-    threading.Thread(target=_worker, args=(job_id, params), daemon=True).start()
-    return render_template("progress.html", job=job_id, url=url, standalone=False)
-
-
-@app.post("/api/run")
-def run_sync():
-    """Auditoría síncrona (usada en Vercel). Devuelve el informe HTML completo."""
-    params = _params(request.form)
-    if not params["url"]:
-        return Response("Escribe una URL.", status=400, mimetype="text/plain")
-    try:
-        result = run_audit(**params)
-    except Exception as exc:  # noqa: BLE001
-        return Response(str(exc), status=400, mimetype="text/plain")
-    return report.render(result)
-
-
-@app.get("/api/job/<job_id>")
-def job_status(job_id):
-    job = JOBS.get(job_id)
-    if not job:
-        return jsonify({"status": "error", "error": "Trabajo no encontrado (¿se reinició el servidor?)"}), 404
-    return jsonify(job)
+# --- Modo local sin Supabase: historial en SQLite ----------------------------
+@app.get("/local/")
+def local_history():
+    if db.enabled() or config.CLOUD:
+        abort(404)
+    meta = seo(f"Historial local | {config.BRAND}", "", "/local/", noindex=True)
+    return render_template("local.html", meta=meta, recent=storage.recent(), user=None, countries=COUNTRIES)
 
 
 @app.get("/reporte/<int:audit_id>")
 def ver_reporte(audit_id):
+    if config.CLOUD:
+        abort(404)
     r = storage.get(audit_id) or abort(404)
     return report.render(r, storage.previous(r["domain"], audit_id))
 
 
-@app.get("/reporte/<int:audit_id>/descargar")
-def descargar(audit_id):
-    r = storage.get(audit_id) or abort(404)
-    html = report.render(r, storage.previous(r["domain"], audit_id), standalone=True)
-    name = f"radar-{r['domain']}-{r['created_at'][:10]}.html"
-    return Response(html, mimetype="text/html", headers={"Content-Disposition": f"attachment; filename={name}"})
-
-
 @app.get("/reporte/<int:audit_id>/json")
 def ver_json(audit_id):
+    if config.CLOUD:
+        abort(404)
     r = storage.get(audit_id) or abort(404)
     return jsonify(r)
 
 
 @app.get("/historial/<domain>")
 def historial(domain):
-    rows = storage.history(domain)
-    if not rows:
+    if config.CLOUD:
         abort(404)
-    return render_template("history.html", domain=domain, rows=rows, standalone=False)
+    rows = storage.history(domain) or abort(404)
+    meta = seo(f"Evolución {domain} | {config.BRAND}", "", f"/historial/{domain}", noindex=True)
+    hist = [{"href": f"/reporte/{r['id']}", **r} for r in rows]
+    return render_template("history.html", meta=meta, domain=domain, rows=hist, user=None, countries=COUNTRIES)
+
+
+@app.get("/health")
+def health():
+    return Response("ok", mimetype="text/plain")
 
 
 if __name__ == "__main__":
     url = f"http://localhost:{config.PUERTO}"
-    print(f"\n  Radar SEO IA corriendo en {url}  (Ctrl+C para detener)\n")
+    print(f"\n  {config.BRAND} corriendo en {url}  (Ctrl+C para detener)\n")
     threading.Timer(1.2, lambda: webbrowser.open(url)).start()
     app.run(host="127.0.0.1", port=config.PUERTO, debug=False)

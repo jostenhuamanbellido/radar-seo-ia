@@ -1,6 +1,6 @@
-# Radar SEO·IA
+# Cítame
 
-**Auditoría de SEO local, GEO y AEO con medición real de visibilidad en ChatGPT, Claude, Gemini y Perplexity.**
+**¿ChatGPT recomienda tu negocio?** SaaS para medir y mejorar la visibilidad de negocios locales en ChatGPT, Gemini, Claude y Perplexity. Auditoría de SEO local, GEO y AEO, seguimiento semanal y rankings públicos por ciudad. Enfocado en Latinoamérica (Perú, México, Colombia, Chile, Argentina).
 
 🔗 **Demo en vivo:** [radar-seo-ia.vercel.app](https://radar-seo-ia.vercel.app) · versión pública con la auditoría técnica completa.
 
@@ -52,6 +52,20 @@ auditar.bat https://misitio.pe --sin-ia --sin-pagespeed --pregunta "¿Cuánto cu
 
 Los informes quedan en `reportes/` y el historial en `data/radar.db`.
 
+### Cítame en la nube (SaaS)
+
+| Pieza | Cómo |
+|---|---|
+| Web pública SEO | Landing por país (`/pe/`, `/mx/`, `/co/`, `/cl/`, `/ar/`) con hreflang, guía pilar, precios, schema, `sitemap.xml`, `robots.txt` y `llms.txt` |
+| Cuentas | Supabase Auth (correo + clave) con sesión firmada en Flask |
+| Datos | Supabase Postgres vía REST, RLS activado sin políticas públicas (solo el backend accede) — ver `supabase/schema.sql` |
+| Planes | Gratis / Negocio (US$15) / Agencia (US$89, marca blanca). Activación manual: `update profiles set plan='negocio' where email='...'` |
+| Seguimiento semanal | Vercel Cron diario → `/api/cron/semanal` dispara una función por web pendiente |
+| Rankings públicos | `python rankings_cli.py --pais pe --ciudad Lima --todos` (datos reales de las IAs, nunca inventados) |
+| Límite anónimo | 5 auditorías/día por IP (hash) |
+
+Variables en Vercel: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `FLASK_SECRET`, `CRON_SECRET`, `SITE_URL` y las claves de IA.
+
 ### Despliegue en Vercel
 
 El mismo código corre como función serverless (`api/index.py` + `vercel.json`). En la nube (variable `VERCEL` presente):
@@ -71,6 +85,9 @@ Para desplegar tu copia: importa el repo en [vercel.com/new](https://vercel.com/
 radar-seo-ia/
 ├─ app.py               Interfaz web (Flask) con auditoría en segundo plano
 ├─ api/index.py         Entrada serverless para Vercel
+├─ web/                 Rutas: public.py (marketing/SEO), account.py (cuentas/panel), api.py (auditorías/cron)
+├─ supabase/schema.sql  Esquema de base de datos
+├─ rankings_cli.py      Generador de rankings por ciudad
 ├─ cli.py               Uso por consola / lotes
 ├─ radar/
 │  ├─ fetcher.py        Descargas, user-agents de bots de IA

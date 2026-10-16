@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-land" style="padding-bottom:10px">
+  <h1>¿Qué negocios recomienda la IA en tu ciudad?</h1>
+  <p class="lead">Preguntamos a ChatGPT, Gemini, Claude y Perplexity por los mejores negocios de cada rubro y ciudad. Estos son sus resultados reales.</p>
+</section>
+{% if rows %}
+  {% for code, c in countries.items() %}
+    {% set rs = rows|selectattr('country','equalto',code)|list %}
+    {% if rs %}
+    <section class="card">
+      <h2>{{ c.name }}</h2>
+      <div class="chips">{% for r in rs %}<a href="/rankings/{{ r.country }}/{{ r.slug }}/">{{ r.category|capitalize }} en {{ r.city }}</a>{% endfor %}</div>
+    </section>
+    {% endif %}
+  {% endfor %}
+{% else %}
+<section class="card" style="text-align:center">
+  <p class="muted">Estamos generando los primeros rankings. Mientras tanto, revisa si las IAs ya te recomiendan.</p>
+  <a class="btn" href="/">Auditar mi web gratis</a>
+</section>
+{% endif %}
+{% endblock %}

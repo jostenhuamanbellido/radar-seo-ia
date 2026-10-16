@@ -3,8 +3,9 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 300,
-      "includeFiles": "{app.py,radar/**,templates/**}"
+      "includeFiles": "{app.py,radar/**,web/**,templates/**,static/**}"
     }
   },
+  "crons": [{ "path": "/api/cron/semanal", "schedule": "0 11 * * *" }],
   "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
 }

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+<article class="prose">
+  <p class="small muted"><a href="/">{{ brand }}</a> › Guía</p>
+  <h1>Cómo aparecer en ChatGPT con tu negocio (y en Gemini, Claude y Perplexity)</h1>
+  <p class="muted small">Por Josten Huamán, ingeniero de software y SEO · Actualizado: 16 de octubre de 2026 · 9 min</p>
+
+  <div class="answer-box"><b>Respuesta corta:</b> para que ChatGPT y otras IAs recomienden tu negocio necesitas tres cosas:
+    que sus bots puedan leer tu web, que tu información (nombre, servicio, ciudad, teléfono) sea clara y coherente en tu web
+    y fuera de ella, y que tu contenido responda en pocas líneas las preguntas que hacen tus clientes. Luego hay que medir,
+    porque las respuestas cambian cada semana.</div>
+
+  <h2>¿Cómo decide una IA qué negocio recomendar?</h2>
+  <p>Cuando alguien pregunta “¿cuál es el mejor dentista en Miraflores?”, los asistentes con búsqueda web (ChatGPT, Gemini,
+    Perplexity, Claude, Copilot) hacen varias búsquedas, leen unas cuantas páginas y arman una respuesta con 3 a 5 nombres.
+    Eligen a quienes aparecen de forma <b>repetida y coherente</b> en fuentes confiables: tu web, tu ficha de Google,
+    directorios del rubro, reseñas, medios y listas tipo “los mejores de…”.</p>
+  <p>Cada IA usa índices distintos. Google (AI Overviews y Gemini) usa su propio índice. ChatGPT combina su rastreador
+    <code>OAI-SearchBot</code> con proveedores de búsqueda externos. Perplexity tiene su propio índice. Por eso estar
+    primero en Google no garantiza aparecer en ChatGPT.</p>
+
+  <h2>Paso 1. Deja entrar a los bots de IA</h2>
+  <p>Es el error más común y el más fácil de arreglar. Si tu <code>robots.txt</code> o tu firewall bloquean a los bots de
+    búsqueda de IA, nunca te van a citar.</p>
+  <pre>User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /</pre>
+  <p>Revisa también <b>Cloudflare</b> (Security › Bots): la opción “Block AI bots” bloquea a varios de estos rastreadores.
+    Bloquear bots de <i>entrenamiento</i> como <code>GPTBot</code> o <code>CCBot</code> es una decisión válida;
+    bloquear los de <i>búsqueda</i> te saca de las respuestas.</p>
+
+  <h2>Paso 2. Que tu contenido se lea sin JavaScript</h2>
+  <p>La mayoría de bots de IA no ejecutan JavaScript. Si tu web muestra los textos con un constructor que los carga
+    después, el bot ve una página vacía. Comprueba que tu nombre, tus servicios, tu dirección y tus precios estén en el
+    HTML inicial.</p>
+
+  <h2>Paso 3. Completa tu ficha de Google y consigue reseñas</h2>
+  <p>Tu Google Business Profile es la fuente local más fuerte. Usa la categoría correcta, el horario real, fotos,
+    servicios con descripción y responde las reseñas. Las IAs también leen las reseñas de terceros: muchas respuestas
+    dicen “tiene buenas reseñas por…” citando lo que escriben tus clientes.</p>
+
+  <h2>Paso 4. Agrega schema LocalBusiness</h2>
+  <p>Los datos estructurados le dicen a cualquier máquina, sin ambigüedad, quién eres y dónde estás. En WordPress lo
+    puedes hacer con Rank Math o Yoast; a mano se ve así:</p>
+  <pre>{
+  "@context": "https://schema.org",
+  "@type": "MedicalClinic",
+  "name": "Tu Clínica",
+  "telephone": "+51 999 999 999",
+  "address": { "@type": "PostalAddress", "streetAddress": "Av. Larco 123",
+    "addressLocality": "Miraflores", "addressRegion": "Lima", "addressCountry": "PE" },
+  "geo": { "@type": "GeoCoordinates", "latitude": -12.12, "longitude": -77.03 },
+  "openingHours": "Mo-Sa 09:00-19:00",
+  "sameAs": ["https://maps.google.com/?cid=...", "https://www.instagram.com/tuclinica"]
+}</pre>
+  <p>Usa el subtipo más específico (<code>Dentist</code>, <code>BeautySalon</code>, <code>Attorney</code>…) y en
+    <code>sameAs</code> enlaza tu ficha de Google y tus perfiles oficiales.</p>
+
+  <h2>Paso 5. Escribe como responde una IA</h2>
+  <p>Este es el corazón del AEO. Para cada servicio, crea secciones con la pregunta exacta que hace la gente y responde
+    <b>en el primer párrafo, en 40 a 60 palabras</b>. Después amplía.</p>
+  <ul>
+    <li>Encabezados como “¿Cuánto cuesta un blanqueamiento dental en Lima?”.</li>
+    <li>Una primera frase que se pueda copiar tal cual: rango de precio, duración, para quién es.</li>
+    <li>Listas para pasos y requisitos; una tabla para precios o comparativas.</li>
+    <li>Un bloque de preguntas frecuentes con schema <code>FAQPage</code>.</li>
+  </ul>
+
+  <h2>Paso 6. Consigue menciones fuera de tu web</h2>
+  <p>Las IAs confían en lo que varias fuentes repiten. Asegúrate de estar, con el <b>mismo nombre, dirección y teléfono</b>,
+    en los directorios de tu rubro y país (por ejemplo Doctoralia para salud), en las redes y en medios o blogs locales.
+    Aparecer en artículos tipo “los mejores [servicio] en [ciudad]” es de lo que más influye.</p>
+
+  <h2>Paso 7. Da datos concretos y firma tu contenido</h2>
+  <p>Las respuestas de IA prefieren cifras verificables: años de experiencia, número de pacientes o clientes, precios
+    desde, duración del tratamiento. Muestra quién escribe o revisa el contenido (nombre, especialidad, colegiatura) y la
+    fecha de actualización.</p>
+
+  <h2>Paso 8. Mide cada semana</h2>
+  <p>Las respuestas de las IAs cambian según el modelo, la ubicación y el día. Mide con las mismas preguntas cada semana y
+    sigue la tendencia: cuántas veces te mencionan, si citan tu web y qué competidores aparecen en tu lugar. Eso es
+    exactamente lo que hace <a href="/">{{ brand }}</a>.</p>
+
+  <h2>Checklist rápido</h2>
+  <ul>
+    <li>☐ robots.txt y Cloudflare permiten OAI-SearchBot, PerplexityBot y Claude-SearchBot.</li>
+    <li>☐ Textos clave visibles sin JavaScript.</li>
+    <li>☐ Google Business Profile completo, con reseñas respondidas.</li>
+    <li>☐ Schema LocalBusiness (subtipo) con dirección, teléfono, geo, horario y sameAs.</li>
+    <li>☐ Páginas de servicio con preguntas reales y respuestas de 40-60 palabras.</li>
+    <li>☐ FAQPage en las páginas principales.</li>
+    <li>☐ Mismo nombre, dirección y teléfono en todos los directorios.</li>
+    <li>☐ Cifras concretas, autor y fecha de actualización.</li>
+    <li>☐ Medición semanal de menciones y citas.</li>
+  </ul>
+
+  <h2>Preguntas frecuentes</h2>
+  <h3>¿Puedo pagar para aparecer en ChatGPT?</h3>
+  <p>No existe una forma de pagar para que ChatGPT te recomiende en sus respuestas orgánicas. Lo que sí puedes hacer es
+    trabajar las señales de esta guía para que te elija con más frecuencia.</p>
+  <h3>¿Cuánto tarda en notarse?</h3>
+  <p>Arreglar bloqueos de bots y schema puede notarse en semanas, cuando los bots vuelven a pasar. Las menciones en otras
+    fuentes y las reseñas son un trabajo de meses. Por eso conviene medir desde el día uno.</p>
+  <h3>¿Sirve el archivo llms.txt?</h3>
+  <p>Es un estándar propuesto que ayuda a resumir tu web para modelos de lenguaje. Es barato de implementar, pero hoy su
+    impacto es bajo frente al resto de pasos.</p>
+
+  <div class="card" style="margin-top:30px;text-align:center">
+    <h3>¿Quieres saber en qué paso estás?</h3>
+    <p class="muted">Audita tu web gratis y recibe la lista de lo que te falta, ordenada por impacto.</p>
+    <a class="btn" href="/">Auditar mi web gratis</a>
+  </div>
+</article>
+{% endblock %}

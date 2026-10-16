@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="small muted"><a href="/rankings/">Rankings</a> › {{ country.name }}</p>
+<h1>Mejores {{ d.category }} en {{ d.city }} según ChatGPT y otras IAs</h1>
+<p class="muted">Preguntamos a {{ d.providers|join(', ') }} por las mejores opciones de {{ d.category }} en {{ d.city }}, {{ country.name }}.
+  Ordenamos por cuántas IAs recomiendan a cada negocio y en qué posición. Actualizado: {{ d.generated_at }}.</p>
+
+<section class="card">
+  {% for it in d['items'] %}
+  <div class="rank-row">
+    <div class="pos">{{ loop.index }}</div>
+    <div style="min-width:0">
+      <b>{{ it.name }}</b>
+      {% if it.web %}<div class="small" style="word-break:break-all"><a href="{{ it.web }}" target="_blank" rel="noopener nofollow">{{ it.web|replace('https://','')|replace('http://','')|truncate(50) }}</a></div>{% endif %}
+      <div class="ai-dots" style="margin-top:6px">
+        {% for p in d.providers %}<span class="{{ 'on' if p in it.mentions }}">{{ p }}{% if p in it.mentions %} #{{ it.mentions[p] }}{% endif %}</span>{% endfor %}
+      </div>
+    </div>
+    <div class="small muted" style="text-align:right">{{ it.mentions|length }}/{{ d.providers|length }}<br>IAs</div>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="card" style="text-align:center">
+  <h2>¿Tu negocio no aparece?</h2>
+  <p class="muted">Descubre por qué las IAs no te recomiendan y qué corregir primero.</p>
+  <form class="tool" method="post" action="/auditar" style="box-shadow:none">
+    <div class="row"><input type="text" name="url" placeholder="URL de tu web" required aria-label="URL"><button class="btn">Auditar gratis</button></div>
+    <input type="hidden" name="country" value="{{ d.country }}"><input type="hidden" name="city" value="{{ d.city }}">
+  </form>
+</section>
+<p class="small muted">Metodología: misma pregunta a cada IA con búsqueda web activada y ubicación {{ d.city }}, {{ country.name }}.
+  Las respuestas de las IAs cambian con el tiempo; este ranking refleja la fecha indicada. No es una recomendación de {{ brand }}.</p>
+{% endblock %}

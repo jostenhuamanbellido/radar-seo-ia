@@ -4,14 +4,20 @@ import re
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from .config import CLOUD, GITHUB_URL, REPORTS_DIR, TEMPLATES_DIR
+from .config import BRAND, CLOUD, GITHUB_URL, REPORTS_DIR, SITE_URL, TEMPLATES_DIR
 
 env = Environment(loader=FileSystemLoader(TEMPLATES_DIR), autoescape=select_autoescape(["html"]))
 
 
-def render(result: dict, prev: dict | None = None, standalone: bool = False) -> str:
-    return env.get_template("report.html").render(r=result, prev=prev, standalone=standalone, cloud=CLOUD,
-                                                  github_url=GITHUB_URL)
+def render(result: dict, prev: dict | None = None, standalone: bool = False, brand: str | None = None,
+           owner: bool = False, site_id: str | None = None, user: dict | None = None) -> str:
+    from .countries import COUNTRIES
+    return env.get_template("report.html").render(
+        r=result, prev=prev, standalone=standalone, cloud=CLOUD, github_url=GITHUB_URL, brand=brand or BRAND,
+        white_label=bool(brand), owner=owner, site_id=site_id, user=user, countries=COUNTRIES, site_url=SITE_URL,
+        meta={"title": f"{result.get('meta', {}).get('brand') or result['domain']} · Informe {brand or BRAND}",
+              "description": "", "noindex": True, "alternates": {}, "jsonld": [], "canonical": "", "og_type": "website"},
+    )
 
 
 def save(result: dict, prev: dict | None = None):

@@ -1,44 +1,29 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="card" style="padding:34px;text-align:center">
+<section class="card" style="padding:34px;text-align:center;max-width:640px;margin:30px auto">
   <div class="ring" id="spin" style="--v:25;margin:0 auto 18px;animation:spin 1s linear infinite"><b></b></div>
   <h2 id="msg">Iniciando auditoría…</h2>
-  <p class="muted">{{ url }}</p>
+  <p class="muted" style="word-break:break-all">{{ url }}</p>
   <ul id="log" class="muted small" style="list-style:none;padding:0;margin:14px 0 0"></ul>
-  <p class="small muted">Con IAs activadas puede tardar 1-3 minutos.</p>
+  <p class="small muted">Suele tardar entre 30 segundos y 2 minutos.</p>
 </section>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 <script>
-const job = {{ job|tojson }};
-const log = document.getElementById('log'), msg = document.getElementById('msg');
-function fail(t){ msg.textContent = 'Error: ' + t; document.getElementById('spin').style.animation = 'none'; }
-{% if cloud %}
-// Modo nube: una sola petición que espera el informe completo
+const msg = document.getElementById('msg'), log = document.getElementById('log');
+function fail(t){ msg.textContent = t; document.getElementById('spin').style.animation = 'none'; }
 const steps = ['Descargando la página principal…','Rastreando páginas internas clave…','Revisando robots.txt, sitemap y llms.txt…',
-               'Probando el acceso de los bots de IA…','Midiendo velocidad móvil con PageSpeed…','Evaluando SEO local, GEO y AEO…','Generando informe…'];
+  'Probando el acceso de los bots de IA…','Midiendo velocidad móvil…','Consultando a las IAs…','Evaluando SEO local, GEO y AEO…','Generando informe…'];
 let k = 0; msg.textContent = steps[0];
-const tick = setInterval(() => { if (k < steps.length - 1) { const li = document.createElement('li'); li.textContent = '✓ ' + steps[k]; log.appendChild(li); k++; msg.textContent = steps[k]; } }, 6000);
-const fd = new FormData(); const form = {{ form|tojson }};
+const tick = setInterval(() => { if (k < steps.length - 1) { const li = document.createElement('li'); li.textContent = '✓ ' + steps[k]; log.appendChild(li); k++; msg.textContent = steps[k]; } }, 7000);
+const fd = new FormData(); const form = {{ form|default({})|tojson }};
 Object.entries(form).forEach(([a, b]) => fd.append(a, b));
-fetch('/api/run', {method: 'POST', body: fd}).then(async r => {
-  clearInterval(tick); const t = await r.text();
-  if (!r.ok) return fail(t.slice(0, 400));
-  document.open(); document.write(t); document.close();
-}).catch(e => { clearInterval(tick); fail('la auditoría tardó demasiado o se cortó (' + e + ')'); });
-{% else %}
-let shown = 0;
-async function poll(){
-  try{
-    const r = await fetch('/api/job/' + job); const j = await r.json();
-    (j.log || []).slice(shown).forEach(t => { const li = document.createElement('li'); li.textContent = '✓ ' + t; log.appendChild(li); });
-    shown = (j.log || []).length;
-    if (j.log && j.log.length) msg.textContent = j.log[j.log.length - 1];
-    if (j.status === 'done') { location.href = '/reporte/' + j.audit_id; return; }
-    if (j.status === 'error') return fail(j.error);
-  }catch(e){}
-  setTimeout(poll, 1200);
-}
-poll();
-{% endif %}
+fetch({{ endpoint|default('/api/run')|tojson }}, {method: 'POST', body: fd}).then(async r => {
+  clearInterval(tick);
+  let j; try { j = await r.json(); } catch (e) { return fail('La auditoría tardó demasiado o se cortó. Inténtalo de nuevo.'); }
+  if (j.redirect) { location.replace(j.redirect); return; }
+  if (j.html) { document.open(); document.write(j.html); document.close(); return; }
+  fail(j.error || 'No se pudo completar la auditoría.');
+  if (r.status === 429) log.insertAdjacentHTML('afterend', '<p><a class="btn" href="/entrar/?modo=registro">Crear cuenta gratis</a></p>');
+}).catch(e => { clearInterval(tick); fail('La auditoría tardó demasiado o se cortó. Inténtalo de nuevo.'); });
 </script>
 {% endblock %}
