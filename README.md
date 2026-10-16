@@ -2,7 +2,7 @@
 
 **Auditoría de SEO local, GEO y AEO con medición real de visibilidad en ChatGPT, Claude, Gemini y Perplexity.**
 
-🔗 **Demo en vivo:** _(enlace de Vercel)_ · versión pública con la auditoría técnica completa.
+🔗 **Demo en vivo:** [radar-seo-ia.vercel.app](https://radar-seo-ia.vercel.app) · versión pública con la auditoría técnica completa.
 
 Pegas una URL y el sistema:
 
